@@ -72,7 +72,7 @@ def preprocess_frame(frame):
     return preprocess_frame
 
 
-def stack_frame(stacked_frames, state, is_new_episodes):
+def stack_frames(stacked_frames, state, is_new_episodes):
     frame = preprocess_frame(state)
 
     if is_new_episode:
@@ -142,7 +142,7 @@ class DQNetwork:
             """ 1. Convolutional Layer"""
             # Input 84x84x4
             self.conv1 = tf.layers.conv2d(
-                inputs_= self.inputs_,
+                inputs= self.inputs_,
                 filters = 32,
                 kernel_size = [8, 8],
                 strides = [4, 4], 
@@ -166,7 +166,7 @@ class DQNetwork:
 
             """2. Convolutional Layer"""
             self.conv2 = tf.layers.conv2d(
-                inputs_= self.conv1_out,
+                inputs= self.conv1_out,
                 filters = 64,
                 kernel_size = [4, 4],
                 strides = [2, 2], 
@@ -190,7 +190,7 @@ class DQNetwork:
 
             """3. Convolutional Layer"""
             self.conv3 = tf.layers.conv2d(
-                inputs_= self.conv3_out,
+                inputs= self.conv2_out,
                 filters = 128,
                 kernel_size = [4, 4],
                 strides = [2, 2], 
@@ -245,3 +245,55 @@ class DQNetwork:
 
             self.optimizer = tf.train.RMSPropOptimizer(self.learning_rate).minimize(self.loss)
 
+
+tf.reset_default_graph()
+DQNetwork = DQNetwork(state_size, action_size, learning_rate)
+
+class Memory():
+    def __init__(self, max_size):
+        self.buffer = deque(maxlen = max_size)
+
+    def add(self, experience):
+        self.buffer.append(experience)
+
+    def sample(self, batch_size):
+        buffer_size = len(self.buffer)
+        index = np.random.choice(np.arange(buffer_size), size = batch_size, replace = False)
+        return [self.buffer[i] for i in index]
+
+memory = Memory(max_size = memory_size)
+
+game.new_episode()
+
+for i in range(pretrain_lenght):
+    if i == 0:
+        state = game.get_state().screen_buffer
+        state, stacked_frames = stack_frames(stacked_frames, state, True)
+
+    # Random Action
+    action = random.choice(possible_actions)
+
+    # Get the rewards
+    reward = game.make_action(action)
+
+    # Look if episode is finished
+    done = game.is_episode_finished()
+    
+    if done:
+        next_state = np.zeros(state.shape)
+        memory.add((state, action, reward,next_state, done))
+        game.new_episode()
+        state = game.get_state().screen_buffer
+        state, stacked_frames = stack_frames(stacked_frames, state, True)
+    else:
+        next_state = game.get_state().screen_buffer
+        next_state, stacked_frames = stack_frames(stacked_frames, next_state, False)
+
+        memory.add((state, action, reward, next_state, done))
+        state = next_state
+
+writer = tf.summary.FileWriter("/tensorboard/dqn/1")
+
+tf.summary.scalar("Loss", DQNetwork.loss)
+
+write_op = tf.summary.merge_all()
