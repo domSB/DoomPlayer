@@ -98,7 +98,7 @@ action_size = game.get_available_buttons_size()
 learning_rate = 0.0002
 
 ### Training Hyperparameter
-total_episodes = 20
+total_episodes = 500
 max_steps = 100
 batch_size = 64
 
@@ -115,7 +115,7 @@ pretrain_lenght = batch_size
 memory_size = 1000000
 
 ### Trained Agent
-training = True
+training = False
 
 ### Anschalten, wenn das Env gerendert werden soll
 episode_render = False
@@ -287,7 +287,7 @@ for i in range(pretrain_lenght):
         memory.add((state, action, reward, next_state, done))
         state = next_state
 
-writer = tf.summary.FileWriter("/tensorboard/dqn/1")
+writer = tf.summary.FileWriter("./tensorboard/dqn/1")
 
 tf.summary.scalar("Loss", DQNetwork.loss)
 
@@ -391,5 +391,48 @@ if training == True:
 
             # Modell alle 5 Episoden speichern
             if episode % 5 == 0:
-                save_path = saver.save(sess, "./models/model.ckpt")
-                print("Model saved")
+                try:
+                    save_path = saver.save(sess, "./models/model.ckpt")
+                    print("Model saved")
+                except:
+                    print("Saving skipped")
+
+with tf.Session() as sess:
+    game, possible_actions = create_environment()
+
+    total_score = 0
+
+    saver.restore(sess, "./models/model.ckpt")
+    game.init()
+
+    for i in range(1):
+        done = False
+        game.new_episode()
+
+        state = game.get_state().screen_buffer
+        state, stacked_frames = stack_frames(stacked_frames, state, True)
+
+        while not game.is_episode_finished():
+            time.sleep(1)
+
+            Qs = sess.run(DQNetwork.output, feed_dict={DQNetwork.inputs_: state.reshape((1, *state.shape))})
+
+            choice = np.argmax(Qs)
+            action = possible_actions[int(choice)]
+
+            game.make_action(action)
+            done = game.is_episode_finished()
+            score = game.get_total_reward()
+
+            if done:
+               break
+            else:
+               print("playing")
+               next_state = game.get_state().screen_buffer
+               next_state, stacked_frames = stack_frames(stacked_frames, next_state, False)
+               state = next_state
+        score = game.get_total_reward()
+        print("Score: ", score)
+
+    time.sleep(5)
+    game.close()
