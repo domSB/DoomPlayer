@@ -98,7 +98,7 @@ action_size = game.get_available_buttons_size()
 learning_rate = 0.0002
 
 ### Training Hyperparameter
-total_episodes = 500
+total_episodes = 20
 max_steps = 100
 batch_size = 64
 
@@ -375,7 +375,7 @@ if training == True:
                     if terminal:
                         target_Qs_batch.append(rewards_mb[i])
                     else:
-                        target = rewards_mb[i] + gamma + np.max(Qs_next_state[i])
+                        target = rewards_mb[i] + gamma * np.max(Qs_next_state[i])
                         target_Qs_batch.append(target)
 
                 targets_mb = np.array([each for each in target_Qs_batch])
