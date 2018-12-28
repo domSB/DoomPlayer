@@ -62,16 +62,11 @@ def test_environment():
 def preprocess_frame(frame):
     # Graustufe muss nicht erstellt werden, da Ausgabe für Script schon grau.
     #x = np.mean(frame, -1)
-
     cropped_frame = frame[30:-10,30:-30]
-
     normalized_frame = cropped_frame/255.0
-    print(frame.shape)
-    print(cropped_frame.shape)
-    print(normalized_frame.shape)
     preprocessed_frame = transform.resize(normalized_frame, [84, 84])
 
-    return preprocess_frame
+    return preprocessed_frame
 
 
 def stack_frames(stacked_frames, state, is_new_episode):
@@ -79,13 +74,10 @@ def stack_frames(stacked_frames, state, is_new_episode):
 
     if is_new_episode:
         stacked_frames = deque([np.zeros((84, 84), dtype=np.int) for i in range(stack_size)], maxlen=4)
-        print(stack_size)
-        print("leer", len(stacked_frames))
         stacked_frames.append(frame)
         stacked_frames.append(frame)
         stacked_frames.append(frame)
         stacked_frames.append(frame)
-        print("Voll", stacked_frames.shape)
         stacked_state = np.stack(stacked_frames, axis=2)
 
     else:
@@ -337,7 +329,7 @@ if training == True:
             while step < max_steps:
                 step += 1
                 decay_step += 1
-                action, explore_probability = predict_action(explore_start, explore_stop, decay_rate, decay_step, possible_actions)
+                action, explore_probability = predict_action(explore_start, explore_stop, decay_rate, decay_step, state, possible_actions)
 
                 reward = game.make_action(action)
                 done = game.is_episode_finished()
@@ -367,10 +359,10 @@ if training == True:
                     state = next_state
 
                 batch = memory.sample(batch_size)
-                states_mb = np.array([each[0] for each in batch], ndim=3)
+                states_mb = np.array([each[0] for each in batch], ndmin=3)
                 actions_mb = np.array([each[1] for each in batch])
                 rewards_mb = np.array([each[2] for each in batch])
-                next_states_mb = np.array([each[3] for each in batch], ndim=3)
+                next_states_mb = np.array([each[3] for each in batch], ndmin=3)
                 dones_mb = np.array([each[4] for each in batch])
 
                 target_Qs_batch = []
