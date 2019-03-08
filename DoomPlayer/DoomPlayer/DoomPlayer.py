@@ -45,6 +45,7 @@ def test_environment():
     for i in range(episodes):
         print("New episode started")
         game.new_episode()
+        step = 0
         while not game.is_episode_finished():
             state = game.get_state()
             img = state.screen_buffer
@@ -52,8 +53,11 @@ def test_environment():
             action = random.choice(possible_actions)
             print(action)
             reward = game.make_action(action)
+            step += 1
+            if step == 30:
+                break
             print("\treward:", reward)
-            time.sleep(2)
+            # time.sleep(2)
         print("Result:", game.get_total_reward())
         time.sleep(2)
     game.close()
@@ -98,7 +102,7 @@ action_size = game.get_available_buttons_size()
 learning_rate = 0.0002
 
 ### Training Hyperparameter
-total_episodes = 500
+total_episodes = 5
 max_steps = 100
 batch_size = 64
 
@@ -115,7 +119,7 @@ pretrain_lenght = batch_size
 memory_size = 1000000
 
 ### Trained Agent
-training = False
+training = True
 
 ### Anschalten, wenn das Env gerendert werden soll
 episode_render = False
@@ -287,7 +291,7 @@ for i in range(pretrain_lenght):
         memory.add((state, action, reward, next_state, done))
         state = next_state
 
-writer = tf.summary.FileWriter("./tensorboard/dqn/1")
+writer = tf.summary.FileWriter("./tensorboard/dqn/2")
 
 tf.summary.scalar("Loss", DQNetwork.loss)
 
@@ -392,7 +396,7 @@ if training == True:
             # Modell alle 5 Episoden speichern
             if episode % 5 == 0:
                 try:
-                    save_path = saver.save(sess, "./models/model.ckpt")
+                    save_path = saver.save(sess, "./models1/model.ckpt")
                     print("Model saved")
                 except:
                     print("Saving skipped")
@@ -402,10 +406,10 @@ with tf.Session() as sess:
 
     total_score = 0
 
-    saver.restore(sess, "./models/model.ckpt")
+    saver.restore(sess, "./models1/model.ckpt")
     game.init()
 
-    for i in range(1):
+    for i in range(3):
         done = False
         game.new_episode()
 
